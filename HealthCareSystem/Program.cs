@@ -51,7 +51,7 @@ namespace HealthCareSystem
                 .AddDefaultTokenProviders();
 
             var app = builder.Build();
-
+            //Cors
             app.UseCors("Allow");
 
             // Configure the HTTP request pipeline.
