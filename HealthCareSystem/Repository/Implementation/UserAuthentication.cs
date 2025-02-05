@@ -1,44 +1,40 @@
-﻿using HealthCareSystem.Models;
+﻿using HealthCareSystem.Context;
+using HealthCareSystem.Models;
 using HealthCareSystem.Models.DTO;
 using HealthCareSystem.Repository.Interface;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 
 namespace HealthCareSystem.Repository.Implementation
 {
     public class UserAuthentication : IUserAuthentication
     {
-        private readonly UserManager<IdentityUser> _userManager;
-
-        private readonly RoleManager<IdentityRole> _roleManager;
-
+        private readonly HealthCareContext _dbContext;
         private readonly IErrorLog _errorLog;
+        private readonly IConfiguration _configuration;
 
-        public UserAuthentication(UserManager<IdentityUser> userManager, IErrorLog errorLog, RoleManager<IdentityRole> roleManager)
+        public UserAuthentication(IErrorLog errorLog, HealthCareContext dbContext, IConfiguration configuration)
         {
-            _userManager = userManager;
             _errorLog = errorLog;
-            _roleManager = roleManager;
-        }   
+            _dbContext = dbContext;
+            _configuration = configuration;
+        }
 
-        async Task<bool> IUserAuthentication.LoginUserAsync(LoginModel login)
+        async Task<string> IUserAuthentication.LoginUserAsync(LoginModel login)
         {
-            var result = false;
+            var result = string.Empty;
             try
             {
-                var userName = await _userManager.FindByEmailAsync(login.Email);
+                var userInfo = await _dbContext.RegisterUsers.FirstOrDefaultAsync(u => (u.Email == login.Email && u.Passsword == login.Password));
 
-                if (userName != null)
+                if (userInfo != null)
                 {
-                    var passCheck = await _userManager.CheckPasswordAsync(userName, login.Password);
-                
-                    if(passCheck)
-                        result = true;
-                    else 
-                        result = false;
-                }
-                else
-                {
-                    return false;
+                    result = generateTokens(userInfo);
                 }
             }
             catch (Exception ex)
@@ -48,38 +44,83 @@ namespace HealthCareSystem.Repository.Implementation
 
             return result;
         }
+        
+        private string generateTokens(RegisterUser userInfo)
+        {
+            var token = string.Empty;
+            try
+            {
+                var Claims = new List<Claim>()
+                {
+                   new Claim(ClaimTypes.Email, userInfo.Email),
+                };
+
+                var userRoleInfo = _dbContext.Roles.Where(r => r.UserId == userInfo.UserId)
+                                                .Select(r => r.RoleName)
+                                                .ToList()
+                                                .SelectMany(role => role.Contains(",")
+                                                    ? role.Split(',').Select(r => r.Trim())  
+                                                    : new[] { role })                        
+                                                .ToList();
+
+                // Add roles as claims
+                foreach (var role in userRoleInfo)
+                {
+                    Claims.Add(new Claim(ClaimTypes.Role, role));
+                }
+
+                var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("Jwt:Key").Value));
+
+                var signCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
+
+                var securityToken = new JwtSecurityToken(
+                    issuer : _configuration.GetSection("Jwt:Issuer").Value,
+                    audience : _configuration.GetSection("Jwt:Audience").Value,
+                    expires : DateTime.UtcNow.AddMinutes(20),
+                    claims : Claims,
+                    signingCredentials : signCredentials
+                    );
+
+                token = new JwtSecurityTokenHandler().WriteToken(securityToken);
+            }
+            catch (Exception ex)
+            {
+                _errorLog.insertError(ex.Message, ex.StackTrace);
+            }
+
+            return token;
+        }
 
         async Task<bool> IUserAuthentication.RegisterUserAsync(RegisterModel registerModel)
         {
-            var result = false; 
+            var result = false;
             try
             {
-                var userEmail = await _userManager.FindByEmailAsync(registerModel.Email);
+                var response = await _dbContext.RegisterUsers
+                                 .AnyAsync(u => (u.UserName == registerModel.UserName && u.Email == registerModel.Email));
 
-                if (userEmail == null)
+                if (!response)
                 {
-                    var userInfo = new IdentityUser 
+                    var user = new RegisterUser()
                     {
                         UserName = registerModel.UserName,
                         Email = registerModel.Email,
-                        PhoneNumber = registerModel.PhoneNumber    
+                        Passsword = registerModel.Password
                     };
-                    
-                    var r = await _userManager.CreateAsync(userInfo, registerModel.Password);
 
-                    if(r.Succeeded)
+                    await _dbContext.RegisterUsers.AddAsync(user);
+                    await _dbContext.SaveChangesAsync();
+
+                    var role = new Role()
                     {
-                       var exists = await _roleManager.RoleExistsAsync(registerModel.Role);
+                        RoleName = string.Join(",", registerModel.Roles),
+                        UserId = user.UserId
+                    };
 
-                        if(!exists)
-                        {
-                            var idenityRole = new IdentityRole(registerModel.Role);
-                            
-                            var succ = await _roleManager.CreateAsync(idenityRole);
+                    await _dbContext.Roles.AddAsync(role);
+                    await _dbContext.SaveChangesAsync();
 
-                            return succ.Succeeded;
-                        }
-                    }
+                    result = true;
                 }
             }
             catch (Exception ex)

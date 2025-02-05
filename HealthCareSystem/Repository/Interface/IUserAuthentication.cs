@@ -5,7 +5,7 @@ namespace HealthCareSystem.Repository.Interface
 {
     public interface IUserAuthentication
     {
-        Task<bool> LoginUserAsync(LoginModel login);
+        Task<string> LoginUserAsync(LoginModel login);
 
         Task<bool> RegisterUserAsync(RegisterModel registerModel);
     }

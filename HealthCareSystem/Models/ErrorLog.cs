@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace HealthCareSystem.Models
 {
-    public class ErrorLogTable
+    public class ErrorLog
     {
         [Key]
         public int LogId { get; set; } 
@@ -12,6 +12,6 @@ namespace HealthCareSystem.Models
 
         public string StackTrace {  get; set; } = string.Empty;
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

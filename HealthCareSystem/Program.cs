@@ -2,8 +2,12 @@
 using HealthCareSystem.Context;
 using HealthCareSystem.Repository.Implementation;
 using HealthCareSystem.Repository.Interface;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Text.Unicode;
 
 namespace HealthCareSystem
 {
@@ -20,17 +24,16 @@ namespace HealthCareSystem
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            builder.Services.AddScoped<IUserAuthentication,UserAuthentication>();
-            builder.Services.AddScoped<IErrorLog,ErrorLog>();
+            builder.Services.AddScoped<IUserAuthentication, UserAuthentication>();
+            builder.Services.AddScoped<IErrorLog, ErrorLogInfo>();
 
-            builder.Services.AddCors(options=> 
+            builder.Services.AddCors(options =>
             {
                 options.AddPolicy("Allow", policy =>
                 {
-                    policy.WithOrigins("http://localhost:5173") // React app URL
+                    policy.AllowAnyOrigin() // React app URL
                    .AllowAnyHeader()
-                   .AllowAnyMethod()
-                   .AllowCredentials();
+                   .AllowAnyMethod();
                 });
             });
 
@@ -39,7 +42,7 @@ namespace HealthCareSystem
                 options.UseSqlServer(builder.Configuration.GetConnectionString("HealthCare"));
             });
 
-            builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => 
+            builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
             {
                 options.Password.RequiredLength = 8;
                 options.Password.RequireDigit = true;
@@ -49,6 +52,30 @@ namespace HealthCareSystem
             })
                 .AddEntityFrameworkStores<HealthCareContext>()
                 .AddDefaultTokenProviders();
+
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+                .AddJwtBearer(options =>
+                {
+                    options.TokenValidationParameters = new TokenValidationParameters()
+                    {
+                        ValidateActor = true,
+                        ValidateAudience = true,
+                        ValidateIssuer = true,
+                        ValidateIssuerSigningKey = true,
+
+                        ValidAudience = builder.Configuration.GetSection("Jwt:Audience").Value,
+                        ValidIssuer = builder.Configuration.GetSection("Jwt:Issuer").Value,
+                        IssuerSigningKey = new SymmetricSecurityKey
+                        (Encoding.UTF8.GetBytes(builder.Configuration.GetSection("Jwt:Key").Value))
+                    };
+
+                });
+
+            builder.Services.AddAuthorization();
 
             var app = builder.Build();
             //Cors
@@ -62,6 +89,8 @@ namespace HealthCareSystem
             }
 
             app.UseHttpsRedirection();
+
+            app.UseAuthentication();
 
             app.UseAuthorization();
 

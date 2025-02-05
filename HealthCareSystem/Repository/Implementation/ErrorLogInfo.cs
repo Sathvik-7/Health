@@ -4,25 +4,26 @@ using HealthCareSystem.Repository.Interface;
 
 namespace HealthCareSystem.Repository.Implementation
 {
-    public class ErrorLog : IErrorLog
+    public class ErrorLogInfo : IErrorLog
     {
         private readonly HealthCareContext _context;    
 
-        public ErrorLog(HealthCareContext healthCareContext)
+        public ErrorLogInfo(HealthCareContext healthCareContext)
         {
             this._context = healthCareContext;
         }
 
         void IErrorLog.insertError(string message,string stackTrace)
         {
-            ErrorLogTable errorLogTable = new ErrorLogTable()
+            ErrorLog errorLogTable = new ErrorLog()
             { 
                 ErrorMessage = message,
                 StackTrace = stackTrace,
                 CreatedAt = DateTime.Now
             };
 
-            _context.errorLogTables.Add(errorLogTable);
+            _context.ErrorLogs.Add(errorLogTable);
+            _context.SaveChanges();
         }
     }
 }

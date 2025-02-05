@@ -1,6 +1,4 @@
-﻿using Microsoft.Extensions.Diagnostics.HealthChecks;
-
-namespace HealthCareSystem.Models
+﻿namespace HealthCareSystem.Models.DTO
 {
     public class RegisterModel
     {
@@ -10,8 +8,6 @@ namespace HealthCareSystem.Models
 
         public string Email { get; set; } = string.Empty;
 
-        public string PhoneNumber { get; set; } = string.Empty;
-
-        public string Role { get; set; } = string.Empty;
+        public List<string> Roles { get; set; }
     }
 }

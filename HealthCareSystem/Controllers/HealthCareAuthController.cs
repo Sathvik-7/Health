@@ -4,6 +4,7 @@ using HealthCareSystem.Repository.Interface;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace HealthCareSystem.Controllers
 {
@@ -13,31 +14,34 @@ namespace HealthCareSystem.Controllers
     public class HealthCareAuthController : ControllerBase
     {
         private readonly IUserAuthentication userAuthentication;
-        private readonly IErrorLog errorLog;
-
+        private readonly IErrorLog _errorLog;
 
         public HealthCareAuthController(IUserAuthentication userAuthentication,IErrorLog errorLog) 
         {
             this.userAuthentication = userAuthentication;
-            this.errorLog = errorLog;   
+            _errorLog = errorLog;   
         }
 
         [HttpPost("Login")]
         public async Task<IActionResult> Login([FromBody] LoginModel login) 
         {
+            var result = string.Empty;
             try 
             {
-                var result = await userAuthentication.LoginUserAsync(login);
+                result = await userAuthentication.LoginUserAsync(login);
 
-                if (!result)
+                if (string.IsNullOrEmpty(result))
                     return NotFound(new { Message = "UserName/Password is in correct" });
             }
             catch (Exception ex) 
             {
-                errorLog.insertError(ex.Message, ex.StackTrace);
+                _errorLog.insertError(ex.Message, ex.StackTrace);
             }
 
-            return Ok(new {Message = "logged in successfully"});
+            return Ok(new {
+                            Message = "logged in successfully",
+                            Token = result
+                            });
         }
 
         [HttpPost("Register")]
@@ -48,11 +52,11 @@ namespace HealthCareSystem.Controllers
                 var result = await userAuthentication.RegisterUserAsync(registerModel);
 
                 if (!result)
-                    return NotFound(new { Message = "UserName/Role already exists." });
+                    return NotFound(new { Message = "UserName & Email already exists." });
             }
             catch (Exception ex)
             {
-                errorLog.insertError(ex.Message, ex.StackTrace);
+                _errorLog.insertError(ex.Message, ex.StackTrace);
             }
 
             return Ok(new { Message = "Registered succcessfully" });
