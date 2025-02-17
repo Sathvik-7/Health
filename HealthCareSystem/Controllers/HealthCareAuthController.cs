@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.IdentityModel.Tokens.Jwt;
+using Serilog;
 
 namespace HealthCareSystem.Controllers
 {
@@ -35,7 +36,9 @@ namespace HealthCareSystem.Controllers
             }
             catch (Exception ex) 
             {
-                _errorLog.insertError(ex.Message, ex.StackTrace);
+                Log.Error("Failure : {@RequestName} , {@Error} , {@DateTimeUTC}",
+                            "Login",ex.Message,DateTime.Today);
+               // _errorLog.insertError(ex.Message, ex.StackTrace);
             }
 
             return Ok(new {
@@ -56,7 +59,10 @@ namespace HealthCareSystem.Controllers
             }
             catch (Exception ex)
             {
-                _errorLog.insertError(ex.Message, ex.StackTrace);
+                Log.Error("Failure : {@RequestName} , {@Error} , {@DateTimeUTC}",
+                            "Register", ex.Message, DateTime.Today);
+
+                //_errorLog.insertError(ex.Message, ex.StackTrace);
             }
 
             return Ok(new { Message = "Registered succcessfully" });

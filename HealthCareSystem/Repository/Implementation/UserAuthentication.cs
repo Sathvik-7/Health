@@ -5,10 +5,13 @@ using HealthCareSystem.Repository.Interface;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.Win32;
+using Serilog;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using Serilog;
 
 namespace HealthCareSystem.Repository.Implementation
 {
@@ -39,7 +42,9 @@ namespace HealthCareSystem.Repository.Implementation
             }
             catch (Exception ex)
             {
-                _errorLog.insertError(ex.Message, ex.StackTrace);
+                Log.Error("Failure : {@RequestName} , {@Error} , {@DateTimeUTC}",
+                            "LoginUserAsync", ex.Message, DateTime.Today);
+                //_errorLog.insertError(ex.Message, ex.StackTrace);
             }
 
             return result;
@@ -85,7 +90,10 @@ namespace HealthCareSystem.Repository.Implementation
             }
             catch (Exception ex)
             {
-                _errorLog.insertError(ex.Message, ex.StackTrace);
+                Log.Error("Token Failure : {@RequestName} , {@Error} , {@DateTimeUTC}",
+                          "generateTokens", ex.Message, DateTime.Today);
+
+                //_errorLog.insertError(ex.Message, ex.StackTrace);
             }
 
             return token;
@@ -125,7 +133,10 @@ namespace HealthCareSystem.Repository.Implementation
             }
             catch (Exception ex)
             {
-                _errorLog.insertError(ex.Message, ex.StackTrace);
+                Log.Error("UserRegistration Failure : {@RequestName} , {@Error} , {@DateTimeUTC}",
+                          "RegisterUserAsync", ex.Message, DateTime.Today);
+
+                //_errorLog.insertError(ex.Message, ex.StackTrace);
             }
             return result;
         }

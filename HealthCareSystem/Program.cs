@@ -1,4 +1,3 @@
-
 using HealthCareSystem.Context;
 using HealthCareSystem.Repository.Implementation;
 using HealthCareSystem.Repository.Interface;
@@ -8,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Text.Unicode;
+using Serilog;
 
 namespace HealthCareSystem
 {
@@ -26,6 +26,7 @@ namespace HealthCareSystem
 
             builder.Services.AddScoped<IUserAuthentication, UserAuthentication>();
             builder.Services.AddScoped<IErrorLog, ErrorLogInfo>();
+            builder.Services.AddScoped<IPatientInformation,PatientInformation>();
 
             builder.Services.AddCors(options =>
             {
@@ -76,6 +77,11 @@ namespace HealthCareSystem
                 });
 
             builder.Services.AddAuthorization();
+
+            builder.Host.UseSerilog((context,configuration) => 
+            {
+                configuration.ReadFrom.Configuration(context.Configuration);
+            });
 
             var app = builder.Build();
             //Cors

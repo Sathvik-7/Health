@@ -15,6 +15,8 @@ namespace HealthCareSystem.Context
 
         public DbSet<Role> Roles { get; set; }
 
+        public DbSet<Patient> Patients { get; set; }    
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Role>()
