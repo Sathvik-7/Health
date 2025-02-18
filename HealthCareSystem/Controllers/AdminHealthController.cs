@@ -1,8 +1,10 @@
-﻿using HealthCareSystem.Models.DTO;
+﻿using HealthCareSystem.Models;
+using HealthCareSystem.Models.DTO;
 using HealthCareSystem.Repository.Interface;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace HealthCareSystem.Controllers
 {
@@ -42,5 +44,37 @@ namespace HealthCareSystem.Controllers
 
             return Ok(patients);
         }
+
+        [HttpPost("insertPatientDetails")]
+        public async Task<IActionResult> insertPatientDetails([FromBody]PatientModel patienDetails)
+        {
+            int records = await _patientInformation.insertPatientInfo(patienDetails);
+
+            if (records == 0)
+                return BadRequest(new {Message = "Inserting details failed"});
+
+            return Ok(new {Message = "Patient Details inserted successful"});
+        }
+
+        [HttpPost("getRecommendationByID")]
+        public async Task<IActionResult> getRecommendationByID([FromBody] PatienDetailsModel patienDetails)
+        {
+            var patients = await _patientInformation.getPatientDetailsById(patienDetails);
+
+            if(patients == null)
+                return BadRequest(new { Message = "Id/Name doesnt exist" });
+            
+            var patientRec = new RecommendationModel()
+            {
+                FirstName = patients.FirstName,
+                LastName = patients.LastName,
+                DateOfBirth = patients.DateOfBirth,
+                Gender = patients.Gender,  
+                Recommendations = patients.Recommendations
+            };
+
+            return Ok(new {Patients = patientRec });
+        }
+    
     }
 }

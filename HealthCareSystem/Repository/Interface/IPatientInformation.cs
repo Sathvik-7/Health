@@ -8,5 +8,7 @@ namespace HealthCareSystem.Repository.Interface
                                                     string? sortBy=null,bool isAsc=true);
 
         Task<PatientModel> getPatientDetailsById(PatienDetailsModel patienDetails);
+
+        Task<int> insertPatientInfo(PatientModel patient);   
     }
 }

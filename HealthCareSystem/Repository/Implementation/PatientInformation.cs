@@ -19,15 +19,44 @@ namespace HealthCareSystem.Repository.Implementation
             this._dbContext = _dbContext;
         }
 
+        public async Task<int> insertPatientInfo(PatientModel patient)
+        {
+            int records = 0;
+
+            try 
+            {
+                var patientInfo = new Patient() 
+                {
+                    FirstName = patient.FirstName,
+                    LastName = patient.LastName,
+                    DateOfBirth = patient.DateOfBirth,
+                    Gender = patient.Gender,
+                    ContactNumber = patient.ContactNumber,
+                    Email = patient.Email,
+                    Address = patient.Address,
+                    Recommendations = patient.Recommendations,
+                };
+
+                await _dbContext.Patients.AddAsync(patientInfo);
+                records = _dbContext.SaveChanges();
+            }
+            catch(Exception ex)
+            {
+                Log.Error("Failure - InsertPatientInfo: {@RequestName} , {@Error} , {@DateTimeUTC}",
+                            "insertPatientInfo", ex.StackTrace, DateTime.Today);
+            }
+
+            return records;
+        }
+
         async Task<List<PatientModel>> IPatientInformation.getPatientDetails(string? filterOn = null, string? filterQuery = null,
                                                     string? sortBy = null, bool isAsc = true)
         {
             IQueryable<Patient> patientsQuery = _dbContext.Patients;
 
-            
             try 
             {
-                // **Apply Filtering**
+                // Apply Filtering
                 if (!string.IsNullOrEmpty(filterOn) && !string.IsNullOrEmpty(filterQuery))
                 {
                     var propertyInfo = typeof(Patient).GetProperty(filterOn,
